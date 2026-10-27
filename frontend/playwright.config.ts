@@ -6,10 +6,15 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   reporter: 'list',
-  use: { baseURL: 'http://127.0.0.1:5173', trace: 'retain-on-failure' },
+  use: {
+    baseURL: 'http://127.0.0.1:5173',
+    trace: 'retain-on-failure',
+    permissions: ['microphone'],
+    launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] },
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
-    { command: 'uv run uvicorn app.main:app --host 127.0.0.1 --port 8000', cwd: '../backend', url: 'http://127.0.0.1:8000/api/v1/health', reuseExistingServer: false },
+    { command: 'uv run uvicorn app.main:app --host 127.0.0.1 --port 8000', cwd: '../backend', env: { LOCAL_INTERVIEWER_DATA_DIR: '../frontend/test-results/e2e-data' }, url: 'http://127.0.0.1:8000/api/v1/health', reuseExistingServer: false },
     { command: 'npm run dev -- --host 127.0.0.1', cwd: '.', url: 'http://127.0.0.1:5173', reuseExistingServer: false },
   ],
 })

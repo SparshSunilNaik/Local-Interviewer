@@ -29,6 +29,7 @@ export const api = {
   action: (id: string, action: 'pause'|'resume'|'end') => request<Interview>(`/interviews/${id}/${action}`, { method: 'POST' }),
   evaluate: (id: string) => request(`/interviews/${id}/evaluation`, { method: 'POST' }),
   deleteInterview: (id: string) => request<void>(`/interviews/${id}`, { method: 'DELETE' }),
+  deleteAllData: () => request<{deleted: boolean}>('/settings/data', { method: 'DELETE', body: JSON.stringify({confirmation:'DELETE ALL LOCAL DATA'}) }),
   transcribe: async (blob: Blob) => {
     const form = new FormData(); form.append('file', blob, `answer.${blob.type.includes('mp4') ? 'm4a' : 'webm'}`); form.append('backend', 'mlx-whisper'); form.append('model', 'mlx-community/whisper-small-mlx')
     return request<{text: string; confidence: number|null; latency_ms: number}>('/stt/transcribe', { method: 'POST', body: form })

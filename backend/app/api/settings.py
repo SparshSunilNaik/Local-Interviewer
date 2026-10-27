@@ -1,12 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.models.entities import AppSetting
+from app.models.entities import (
+    AppSetting,
+    Evaluation,
+    InterviewSession,
+    InterviewTurn,
+    ProviderProfile,
+)
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 Database = Annotated[AsyncSession, Depends(get_db)]
@@ -34,3 +40,17 @@ async def save_settings(payload: SettingsPayload, db: Database):
         db.add(AppSetting(key="user", value=payload.model_dump()))
     await db.commit()
     return payload
+
+
+class DeleteAllRequest(BaseModel):
+    confirmation: str
+
+
+@router.delete("/data")
+async def delete_all_data(payload: DeleteAllRequest, db: Database):
+    if payload.confirmation != "DELETE ALL LOCAL DATA":
+        raise HTTPException(status_code=400, detail="Confirmation phrase does not match")
+    for entity in (Evaluation, InterviewTurn, InterviewSession, ProviderProfile, AppSetting):
+        await db.execute(delete(entity))
+    await db.commit()
+    return {"deleted": True}
