@@ -3,7 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.interviews import router as interviews_router
 from app.api.providers import router as providers_router
+from app.api.websocket import router as websocket_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
@@ -27,6 +29,8 @@ app.add_middleware(
     allow_headers=["*"] ,
 )
 app.include_router(providers_router, prefix="/api/v1")
+app.include_router(interviews_router, prefix="/api/v1")
+app.include_router(websocket_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
