@@ -1,6 +1,10 @@
+import asyncio
+import ipaddress
 import json
+import socket
 import time
 from collections.abc import AsyncIterator
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -28,6 +32,7 @@ class OllamaClient:
     async def test(self) -> dict:
         started = time.perf_counter()
         try:
+            await self._validate_destination()
             async with self._client() as client:
                 version_response = await client.get("/api/version")
                 self._check(version_response)
@@ -44,12 +49,14 @@ class OllamaClient:
             return {"ok": False, "error": self._safe_error(exc)}
 
     async def models(self) -> list[dict]:
+        await self._validate_destination()
         async with self._client() as client:
             response = await client.get("/api/tags")
             self._check(response)
             return response.json().get("models", [])
 
     async def show(self, model: str) -> dict:
+        await self._validate_destination()
         async with self._client() as client:
             response = await client.post("/api/show", json={"model": model})
             self._check(response)
@@ -61,6 +68,7 @@ class OllamaClient:
             }
 
     async def chat(self, messages: list[dict], *, structured: bool = False) -> dict:
+        await self._validate_destination()
         payload = self._payload(messages, stream=False)
         if structured:
             payload["format"] = "json"
@@ -84,6 +92,7 @@ class OllamaClient:
             }
 
     async def stream_chat(self, messages: list[dict]) -> AsyncIterator[str]:
+        await self._validate_destination()
         payload = self._payload(messages, stream=True)
         async with self._client() as client:
             async with client.stream("POST", "/api/chat", json=payload) as response:
@@ -119,6 +128,31 @@ class OllamaClient:
             _, after = rest.split("</think>", 1)
             value = before + after
         return value.replace("<|im_end|>", "").strip()
+
+    async def _validate_destination(self) -> None:
+        """Resolve immediately before use and reject metadata/special-purpose destinations."""
+        host = urlsplit(self.profile.base_url).hostname
+        if not host:
+            raise OllamaError("Provider hostname is missing")
+        try:
+            records = await asyncio.get_running_loop().run_in_executor(
+                None, lambda: socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+            )
+        except socket.gaierror as exc:
+            raise OllamaError("Provider hostname could not be resolved") from exc
+        addresses = {record[4][0] for record in records}
+        self._validate_addresses(addresses)
+
+    @staticmethod
+    def _validate_addresses(addresses: set[str]) -> None:
+        if not addresses:
+            raise OllamaError("Provider hostname resolved to no addresses")
+        for value in addresses:
+            address = ipaddress.ip_address(value)
+            # Loopback and RFC1918/ULA LAN addresses are permitted only because saving the
+            # profile is the user's explicit approval. Metadata and special ranges are not.
+            if address.is_link_local or address.is_multicast or address.is_unspecified or address.is_reserved:
+                raise OllamaError("Provider resolves to a blocked special-purpose address")
 
     @staticmethod
     def _check(response: httpx.Response) -> None:
