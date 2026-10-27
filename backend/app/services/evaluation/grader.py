@@ -72,7 +72,7 @@ class Grader:
                         structured=True,
                     )
                     result = EvaluationResult.model_validate_json(response["content"])
-                    return self._normalize_weights(result)
+                    return self._enforce_evidence(self._normalize_weights(result), answers)
                 except (ValidationError, ValueError, RuntimeError, json.JSONDecodeError):
                     continue
         return self._deterministic_grade(answers)
@@ -85,6 +85,25 @@ class Grader:
         for item in result.dimensions:
             item.weight = item.weight / total
         result.overall_score = round(sum(item.score * item.weight for item in result.dimensions), 1)
+        return result
+
+    @staticmethod
+    def _enforce_evidence(result: EvaluationResult, answers: list[str]) -> EvaluationResult:
+        """Evidence must be a verbatim candidate excerpt, never an interviewer statement."""
+        normalized_answers = [" ".join(answer.split()).casefold() for answer in answers]
+        for dimension in result.dimensions:
+            dimension.evidence = [
+                quote
+                for quote in dimension.evidence
+                if any(" ".join(quote.split()).casefold() in answer for answer in normalized_answers)
+            ]
+            if not dimension.evidence:
+                dimension.confidence = min(dimension.confidence, 0.3)
+                dimension.explanation = f"Insufficient direct evidence. {dimension.explanation}"
+        result.confidence = min(
+            result.confidence,
+            sum(dimension.confidence for dimension in result.dimensions) / len(result.dimensions),
+        )
         return result
 
     @staticmethod
