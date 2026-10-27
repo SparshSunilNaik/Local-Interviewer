@@ -20,5 +20,5 @@ frontend/test-results/
 *.webm
 *.onnx
 *.safetensors
-models/
+/models/
 run/
