@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.audio import router as audio_router
 from app.api.interviews import router as interviews_router
 from app.api.providers import router as providers_router
+from app.api.reports import router as reports_router
+from app.api.settings import router as settings_router
 from app.api.websocket import router as websocket_router
 from app.core.config import settings
 from app.db.base import Base
@@ -33,6 +35,8 @@ app.include_router(providers_router, prefix="/api/v1")
 app.include_router(interviews_router, prefix="/api/v1")
 app.include_router(websocket_router, prefix="/api/v1")
 app.include_router(audio_router, prefix="/api/v1")
+app.include_router(reports_router, prefix="/api/v1")
+app.include_router(settings_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
