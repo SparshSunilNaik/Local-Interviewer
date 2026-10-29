@@ -14,6 +14,28 @@ test('landing has no serious automated accessibility violations', async ({ page 
   expect(results.violations.filter(item => ['critical', 'serious'].includes(item.impact || ''))).toEqual([])
 })
 
+test('microphone diagnostics records, plays back, and compares models', async ({ page }) => {
+  await page.route('**/api/v1/stt/transcribe', route => route.fulfill({
+    status:200, contentType:'application/json', body:JSON.stringify({
+      text:'Hello 123 123 mic testing.', confidence:.8, needs_review:false, latency_ms:850,
+      audio_metrics:{sample_rate:48000,normalized_sample_rate:16000,normalized_duration_seconds:1.2,rms_amplitude:.1,peak_amplitude:.5,clipping_percentage:0,speech_active_seconds:1},
+      error_rates:{wer:0,cer:0},
+    }),
+  }))
+  await page.goto('/settings')
+  await page.getByRole('button', {name:'Start diagnostic recording'}).click()
+  await expect(page.getByRole('button', {name:'Stop diagnostic recording'})).toBeVisible()
+  await page.waitForTimeout(500)
+  await page.getByRole('button', {name:'Stop diagnostic recording'}).click()
+  await expect(page.getByLabel('Playback original recording')).toBeVisible()
+  await page.getByPlaceholder(/Paste what you said/).fill('Hello 123 123 mic testing.')
+  await page.getByRole('button', {name:'Transcribe base.en'}).click()
+  await expect(page.getByText('base.en', {exact:true})).toBeVisible()
+  await page.getByRole('button', {name:'Transcribe small.en'}).click()
+  await expect(page.getByText('small.en', {exact:true})).toBeVisible()
+  await expect(page.getByText('WER 0.0% · CER 0.0%').first()).toBeVisible()
+})
+
 test('mocked microphone utterance can be reviewed and submitted', async ({ page, request }) => {
   const created = await request.post('http://127.0.0.1:8000/api/v1/interviews', {data:{
     interview_type:'Behavioral', difficulty:'Beginner', duration_minutes:10,
@@ -70,7 +92,7 @@ test('provider failure is actionable and does not break settings', async ({ page
   await page.getByRole('button', {name: /Add profile/}).click()
   await page.getByLabel('Profile name').fill('Unavailable test')
   await page.getByLabel('Ollama base URL').fill('http://127.0.0.1:9')
-  await page.getByLabel('Model').fill('missing:model')
+  await page.getByRole('textbox', {name:'Model', exact:true}).fill('missing:model')
   await page.getByRole('button', {name: 'Save profile'}).click()
   await expect(page.getByText('Unavailable test').first()).toBeVisible()
   const row = page.locator('.provider-row').filter({hasText:'Unavailable test'}).first()
