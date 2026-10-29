@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, Mic, Pause, Play, RotateCcw, Send, Square, Volume2, VolumeX } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AstraOrb } from '../components/AstraOrb'
 import { useRecorder } from '../hooks/useRecorder'
@@ -8,15 +8,16 @@ import { api } from '../services/api'
 import { usePreferences } from '../stores/preferences'
 
 export function InterviewPage() {
-  const {id=''}=useParams(); const navigate=useNavigate(); const queryClient=useQueryClient(); const [answer,setAnswer]=useState(''); const [notice,setNotice]=useState(''); const [speaking,setSpeaking]=useState(false); const audio=useRef<HTMLAudioElement | null>(null); const speechRequest=useRef<AbortController | null>(null); const speechGeneration=useRef(0); const rec=useRecorder(); const prefs=usePreferences()
+  const {id=''}=useParams(); const navigate=useNavigate(); const queryClient=useQueryClient(); const [answer,setAnswer]=useState(''); const [notice,setNotice]=useState(''); const [speaking,setSpeaking]=useState(false); const audio=useRef<HTMLAudioElement | null>(null); const speechRequest=useRef<AbortController | null>(null); const speechGeneration=useRef(0); const autoSpokenQuestion=useRef(''); const rec=useRecorder(); const prefs=usePreferences()
   const {data:session,isLoading}=useQuery({queryKey:['interview',id],queryFn:()=>api.interview(id),refetchInterval:5000})
   const update=(value:unknown)=>queryClient.setQueryData(['interview',id],value)
   const submit=useMutation({mutationFn:(text:string)=>api.answer(id,text),onSuccess:(s)=>{update(s);setAnswer('');setNotice('')},onError:e=>setNotice((e as Error).message)})
   const action=useMutation({mutationFn:(a:'pause'|'resume'|'end')=>api.action(id,a),onSuccess:s=>{update(s);if(s.status==='ENDING')navigate(`/report/${id}`)}})
-  const stopSpeaking=()=>{speechGeneration.current+=1;speechRequest.current?.abort();speechRequest.current=null;if(audio.current){audio.current.pause();audio.current.src='';audio.current=null}setSpeaking(false)}
-  const speak=async()=>{if(!session||prefs.muted)return;stopSpeaking();const generation=speechGeneration.current;const controller=new AbortController();speechRequest.current=controller;setSpeaking(true);try{const blob=await api.speak(session.current_question,prefs.voice,prefs.speed,controller.signal);if(generation!==speechGeneration.current)return;const url=URL.createObjectURL(blob);const element=new Audio(url);audio.current=element;element.volume=prefs.volume;element.onended=()=>{URL.revokeObjectURL(url);if(generation===speechGeneration.current)setSpeaking(false)};await element.play()}catch(e){if((e as Error).name!=='AbortError')setNotice((e as Error).message);if(generation===speechGeneration.current)setSpeaking(false)}}
+  const stopSpeaking=useCallback(()=>{speechGeneration.current+=1;speechRequest.current?.abort();speechRequest.current=null;if(audio.current){audio.current.pause();audio.current.src='';audio.current=null}setSpeaking(false)},[])
+  const speak=useCallback(async()=>{if(!session||prefs.muted)return;stopSpeaking();const generation=speechGeneration.current;const controller=new AbortController();speechRequest.current=controller;setSpeaking(true);try{const blob=await api.speak(session.current_question,prefs.voice,prefs.speed,controller.signal);if(generation!==speechGeneration.current)return;const url=URL.createObjectURL(blob);const element=new Audio(url);audio.current=element;element.volume=prefs.volume;element.onended=()=>{URL.revokeObjectURL(url);if(generation===speechGeneration.current)setSpeaking(false)};await element.play()}catch(e){if((e as Error).name!=='AbortError')setNotice((e as Error).message);if(generation===speechGeneration.current)setSpeaking(false)}},[session,prefs.muted,prefs.voice,prefs.speed,prefs.volume,stopSpeaking])
   const record=async()=>{try{if(rec.recording){const blob=await rec.stop();setNotice('Transcribing locally…');const result=await api.transcribe(blob);setAnswer(result.text);setNotice(result.confidence===null?'Review the transcript before submitting. Confidence is unavailable.':'Review the transcript before submitting.')}else{stopSpeaking();await rec.start()}}catch(e){setNotice((e as Error).message)}}
-  useEffect(()=>()=>stopSpeaking(),[])
+  useEffect(()=>()=>stopSpeaking(),[stopSpeaking])
+  useEffect(()=>{if(session&&session.mode!=='text'&&session.current_question!==autoSpokenQuestion.current){autoSpokenQuestion.current=session.current_question;void speak()}},[session,speak])
   if(isLoading||!session)return <div className="page loading">Preparing interview room…</div>
   const paused=session.status==='PAUSED'; const state=paused?'PAUSED':speaking?'SPEAKING':rec.recording?'LISTENING':session.status
   return <div className="interview-shell">

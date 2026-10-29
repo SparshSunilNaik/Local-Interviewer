@@ -24,6 +24,8 @@ test('mocked microphone utterance can be reviewed and submitted', async ({ page,
     status: 200, contentType:'application/json', body:JSON.stringify({text:'I clarified ownership, aligned the team, and documented the decision.',confidence:.9,latency_ms:120}),
   }))
   await page.goto(`/interview/${session.id}`)
+  const stopSpeaking = page.getByRole('button', {name:'Stop speaking'})
+  if (await stopSpeaking.isVisible()) await stopSpeaking.click()
   await page.getByRole('button', {name:'Start recording'}).click()
   await expect(page.getByRole('button', {name:'Stop recording'})).toBeVisible()
   await page.getByRole('button', {name:'Stop recording'}).click()
