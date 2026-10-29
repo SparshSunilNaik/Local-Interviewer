@@ -1,6 +1,8 @@
 import asyncio
 import shutil
 import time
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
@@ -13,6 +15,7 @@ router = APIRouter(tags=["audio", "documents"])
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 _processed_recordings: dict[tuple[str, str], float] = {}
+_stt_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="local-stt")
 
 
 class TTSRequest(BaseModel):
@@ -53,8 +56,9 @@ async def transcribe(
     if key:
         _processed_recordings[key] = now
     try:
-        result = await asyncio.to_thread(
-            stt.transcribe_bytes, data, file.content_type or "", backend, model
+        result = await asyncio.get_running_loop().run_in_executor(
+            _stt_executor,
+            partial(stt.transcribe_bytes, data, file.content_type or "", backend, model),
         )
         if reference_text:
             result["error_rates"] = stt.error_rates(reference_text[:10_000], result["text"])

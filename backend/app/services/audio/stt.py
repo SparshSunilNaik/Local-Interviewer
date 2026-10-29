@@ -5,13 +5,14 @@ import math
 import re
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 ALLOWED_MODELS = {
     "mlx-community/whisper-base.en-mlx",
@@ -21,6 +22,7 @@ DOMAIN_PROMPT = (
     "Domain vocabulary: Astra, Sparsh, Python, asyncio, FastAPI, Ollama, Qwen, "
     "RAG, LLM, API, machine learning."
 )
+_MLX_INFERENCE_LOCK = threading.Lock()
 
 
 class SpeechError(RuntimeError):
@@ -172,20 +174,21 @@ def transcribe_bytes(data: bytes, content_type: str, backend: str, model: str) -
                 raise SpeechError("mlx-whisper is not installed. Run setup.sh with STT enabled.")
             import mlx_whisper
 
-            result = mlx_whisper.transcribe(
-                str(normalized),
-                path_or_hf_repo=model,
-                language="en",
-                task="transcribe",
-                temperature=0.0,
-                condition_on_previous_text=False,
-                no_speech_threshold=0.6,
-                logprob_threshold=-1.0,
-                compression_ratio_threshold=2.4,
-                initial_prompt=DOMAIN_PROMPT,
-                word_timestamps=True,
-                hallucination_silence_threshold=1.0,
-            )
+            with _MLX_INFERENCE_LOCK:
+                result = mlx_whisper.transcribe(
+                    str(normalized),
+                    path_or_hf_repo=model,
+                    language="en",
+                    task="transcribe",
+                    temperature=0.0,
+                    condition_on_previous_text=False,
+                    no_speech_threshold=0.6,
+                    logprob_threshold=-1.0,
+                    compression_ratio_threshold=2.4,
+                    initial_prompt=DOMAIN_PROMPT,
+                    word_timestamps=True,
+                    hallucination_silence_threshold=1.0,
+                )
             text = result.get("text", "").strip()
             confidence = _confidence(result)
         elif backend == "faster-whisper":
@@ -207,10 +210,13 @@ def transcribe_bytes(data: bytes, content_type: str, backend: str, model: str) -
         raise SpeechError("No speech was detected. Check the microphone and try again.")
     latency = round((time.perf_counter() - started) * 1000, 1)
     logger.info(
-        "STT completed model=%s mime=%s input_duration=%.3fs normalized_duration=%.3fs "
+        "STT completed model=%s mime=%s input_rate=%dHz channels=%d input_duration=%.3fs "
+        "normalized_duration=%.3fs "
         "rms=%.5f peak=%.5f clipping=%.4f%% active=%.3fs latency=%.1fms",
         model,
         mime,
+        metrics["sample_rate"],
+        metrics["channels"],
         metrics["duration_seconds"],
         metrics["normalized_duration_seconds"],
         metrics["rms_amplitude"],
@@ -222,7 +228,7 @@ def transcribe_bytes(data: bytes, content_type: str, backend: str, model: str) -
     return {
         "text": text,
         "confidence": confidence,
-        "needs_review": confidence is None or confidence < 0.45 or metrics["clipping_percentage"] > 1,
+        "needs_review": confidence is None or confidence < 0.55 or metrics["clipping_percentage"] > 1,
         "latency_ms": latency,
         "audio_metrics": metrics,
     }
