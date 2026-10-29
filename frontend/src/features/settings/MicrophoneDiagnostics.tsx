@@ -70,7 +70,7 @@ export function MicrophoneDiagnostics() {
   return <section className="panel mic-diagnostics">
     <div className="panel-title"><Mic/><div><h2>Microphone diagnostics</h2><p>Temporary local recording, playback, audio metrics, and identical-model comparison.</p></div></div>
     <div className="field-grid">
-      <label>Input device<select value={deviceId} onChange={event=>setDeviceId(event.target.value)}><option value="">System default microphone</option>{devices.map((device,index)=><option key={device.deviceId} value={device.deviceId}>{device.label||`Microphone ${index+1}`}</option>)}</select></label>
+      <label>Input device<select value={deviceId} onChange={event=>setDeviceId(event.target.value)}><option value="">System default microphone</option>{devices.map((device,index)=><option key={device.deviceId} value={device.deviceId}>{device.label||`Microphone ${index+1}`}</option>)}</select><button type="button" className="button secondary compact" onClick={()=>void refreshDevices()}>Refresh microphones</button></label>
       <label>Interview STT model<select value={preferences.sttModel} onChange={event=>preferences.set({sttModel:event.target.value})}><option value={SMALL_MODEL}>Whisper small.en (recommended)</option><option value={BASE_MODEL}>Whisper base.en (faster fallback)</option></select></label>
     </div>
     <div className="audio-toggles">
