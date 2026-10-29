@@ -1,5 +1,6 @@
 import asyncio
 import shutil
+import time
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
@@ -11,6 +12,7 @@ from app.services.documents.parser import DocumentError, extract_document
 router = APIRouter(tags=["audio", "documents"])
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
+_processed_recordings: dict[tuple[str, str], float] = {}
 
 
 class TTSRequest(BaseModel):
@@ -35,14 +37,36 @@ async def transcribe(
     file: Annotated[UploadFile, File()],
     backend: Annotated[str, Form()] = "mlx-whisper",
     model: Annotated[str, Form()] = "mlx-community/whisper-base.en-mlx",
+    recording_id: Annotated[str | None, Form()] = None,
+    reference_text: Annotated[str | None, Form()] = None,
 ):
     data = await file.read(MAX_AUDIO_BYTES + 1)
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(status_code=413, detail="Audio exceeds the 25 MB limit")
+    key = (recording_id, model) if recording_id else None
+    now = time.monotonic()
+    for old_key, timestamp in list(_processed_recordings.items()):
+        if now - timestamp > 600:
+            _processed_recordings.pop(old_key, None)
+    if key and key in _processed_recordings:
+        raise HTTPException(status_code=409, detail="This recording was already transcribed with that model")
+    if key:
+        _processed_recordings[key] = now
     try:
-        return await asyncio.to_thread(stt.transcribe_bytes, data, file.content_type or "", backend, model)
+        result = await asyncio.to_thread(
+            stt.transcribe_bytes, data, file.content_type or "", backend, model
+        )
+        if reference_text:
+            result["error_rates"] = stt.error_rates(reference_text[:10_000], result["text"])
+        return result
     except stt.SpeechError as exc:
+        if key:
+            _processed_recordings.pop(key, None)
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception:
+        if key:
+            _processed_recordings.pop(key, None)
+        raise
 
 
 @router.post("/tts/synthesize")
