@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 from pydantic import ValidationError
 
@@ -31,3 +33,19 @@ def test_blocks_cloud_metadata_and_special_addresses():
 
 def test_allows_explicit_local_and_lan_addresses():
     OllamaClient._validate_addresses({"127.0.0.1", "192.168.1.100"})
+
+
+def test_task_specific_output_budget_does_not_change_profile_default():
+    profile = SimpleNamespace(
+        model="qwen3:30b",
+        thinking=False,
+        keep_alive="10m",
+        temperature=0.3,
+        context_length=8192,
+        max_tokens=320,
+    )
+    client = OllamaClient(profile)
+    evaluation = client._payload([], stream=False, max_tokens=1400)
+    conversation = client._payload([], stream=False)
+    assert evaluation["options"]["num_predict"] == 1400
+    assert conversation["options"]["num_predict"] == 320

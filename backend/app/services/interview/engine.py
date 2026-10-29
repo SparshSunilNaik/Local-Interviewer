@@ -172,13 +172,19 @@ transition. Do not assume facts absent from the answer or supplied documents."""
             )
         uncertainty = {"not sure", "don t know", "do not know", "unsure"}
         if any(marker in normalized for marker in uncertainty) and len(words) <= 16:
+            question = (
+                "Let's make it concrete: if a database lookup slows as a table grows, "
+                "what would you investigate first?"
+                if {"database", "index", "indexing"} & word_set
+                else (
+                    "Let's take a simpler angle: what part of that problem would you investigate first, "
+                    "and how would you test your understanding?"
+                )
+            )
             return InterviewAction(
                 action="clarify",
                 topic="conceptual_reframe",
-                question=(
-                    "Let's make it concrete: if a database lookup slows as a table grows, "
-                    "what would you investigate first?"
-                ),
+                question=question,
                 rationale="Reframe uncertainty with an approachable scenario.",
             )
         if {"gil", "parallel", "threads"}.issubset(word_set) and (
@@ -199,7 +205,9 @@ transition. Do not assume facts absent from the answer or supplied documents."""
     @staticmethod
     def _should_end(session: InterviewSession) -> bool:
         candidate_answers = sum(turn.role == "candidate" for turn in session.turns)
-        target = max(3, session.duration_minutes // 4)
+        # Even a short session needs enough turns for an initial probe, a challenge,
+        # a topic transition, and a closing decision.
+        target = max(4, session.duration_minutes // 4)
         return candidate_answers >= target
 
     @staticmethod

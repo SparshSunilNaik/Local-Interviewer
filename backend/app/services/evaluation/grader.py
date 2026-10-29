@@ -70,6 +70,7 @@ class Grader:
                     response = await OllamaClient(profile).chat(
                         [{"role": "system", "content": EVALUATION_SYSTEM}, {"role": "user", "content": prompt}],
                         structured=True,
+                        max_tokens=1400,
                     )
                     result = EvaluationResult.model_validate_json(response["content"])
                     return self._enforce_evidence(self._normalize_weights(result), answers)

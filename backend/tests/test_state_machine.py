@@ -39,6 +39,13 @@ def test_uncertainty_is_reframed_as_simpler_scenario():
     assert "table grows" in action.question
 
 
+def test_generic_uncertainty_does_not_invent_a_database_topic():
+    action = InterviewEngine._recovery_action("I'm not sure how that works.")
+    assert action is not None
+    assert "database" not in action.question.lower()
+    assert "simpler angle" in action.question.lower()
+
+
 def test_follow_up_quality_rubric_flags_repetition_and_praise():
     question = "Excellent. How did Redis caching affect latency?"
     result = assess_follow_up(

@@ -67,9 +67,15 @@ class OllamaClient:
                 "capabilities": data.get("capabilities", []),
             }
 
-    async def chat(self, messages: list[dict], *, structured: bool = False) -> dict:
+    async def chat(
+        self,
+        messages: list[dict],
+        *,
+        structured: bool = False,
+        max_tokens: int | None = None,
+    ) -> dict:
         await self._validate_destination()
-        payload = self._payload(messages, stream=False)
+        payload = self._payload(messages, stream=False, max_tokens=max_tokens)
         if structured:
             payload["format"] = "json"
         async with self._client() as client:
@@ -106,7 +112,9 @@ class OllamaClient:
                     if content:
                         yield content
 
-    def _payload(self, messages: list[dict], stream: bool) -> dict:
+    def _payload(
+        self, messages: list[dict], stream: bool, max_tokens: int | None = None
+    ) -> dict:
         return {
             "model": self.profile.model,
             "messages": messages,
@@ -116,7 +124,7 @@ class OllamaClient:
             "options": {
                 "temperature": self.profile.temperature,
                 "num_ctx": self.profile.context_length,
-                "num_predict": self.profile.max_tokens,
+                "num_predict": max_tokens or self.profile.max_tokens,
             },
         }
 
