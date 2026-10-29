@@ -54,7 +54,7 @@ No large model is downloaded by setup.
 ollama pull qwen3:8b
 cd backend
 uv sync --group stt-apple       # mlx-whisper package on Apple Silicon
-# The selected Whisper model downloads on first explicit transcription.
+# Whisper medium.en downloads on first explicit transcription (about 1.5 GB).
 ```
 
 Kokoro MLX package compatibility varies by release. The currently resolved package is detected but not enabled until its runtime API is verified; macOS `say` is the explicit local basic fallback. This limitation is shown in diagnostics rather than silently using a cloud service.

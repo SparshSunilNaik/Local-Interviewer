@@ -14,7 +14,7 @@ test('landing has no serious automated accessibility violations', async ({ page 
   expect(results.violations.filter(item => ['critical', 'serious'].includes(item.impact || ''))).toEqual([])
 })
 
-test('microphone diagnostics records, plays back, and compares models', async ({ page }) => {
+test('microphone diagnostics records, plays back, and transcribes with medium.en', async ({ page }) => {
   await page.route('**/api/v1/stt/transcribe', route => route.fulfill({
     status:200, contentType:'application/json', body:JSON.stringify({
       text:'Hello 123 123 mic testing.', confidence:.8, needs_review:false, latency_ms:850,
@@ -29,10 +29,8 @@ test('microphone diagnostics records, plays back, and compares models', async ({
   await page.getByRole('button', {name:'Stop diagnostic recording'}).click()
   await expect(page.getByLabel('Playback original recording')).toBeVisible()
   await page.getByPlaceholder(/Paste what you said/).fill('Hello 123 123 mic testing.')
-  await page.getByRole('button', {name:'Transcribe base.en'}).click()
-  await expect(page.getByText('base.en', {exact:true})).toBeVisible()
-  await page.getByRole('button', {name:'Transcribe small.en'}).click()
-  await expect(page.getByText('small.en', {exact:true})).toBeVisible()
+  await page.getByRole('button', {name:'Transcribe with medium.en'}).click()
+  await expect(page.getByText('medium.en transcript', {exact:true})).toBeVisible()
   await expect(page.getByText('WER 0.0% · CER 0.0%').first()).toBeVisible()
 })
 

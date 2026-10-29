@@ -5,7 +5,13 @@ import numpy as np
 import pytest
 import soundfile as sf
 
-from app.services.audio.stt import SpeechError, analyze_wav, error_rates, transcribe_bytes
+from app.services.audio.stt import (
+    SpeechError,
+    analyze_wav,
+    combine_audio_metrics,
+    error_rates,
+    transcribe_bytes,
+)
 from app.services.documents.parser import DocumentError, extract_document
 
 
@@ -23,7 +29,7 @@ def test_rejects_silence_before_model_inference(tmp_path):
     data = write_wav(tmp_path / "silence.wav", np.zeros(32000, dtype=np.float32))
     with pytest.raises(SpeechError, match="No speech"):
         transcribe_bytes(
-            data, "audio/wav", "mlx-whisper", "mlx-community/whisper-base.en-mlx"
+            data, "audio/wav", "mlx-whisper", "mlx-community/whisper-medium.en-mlx"
         )
 
 
@@ -36,9 +42,27 @@ def test_reports_clipping_and_audio_duration(tmp_path):
     assert metrics["clipping_percentage"] > 99
 
 
+def test_unknown_webm_container_duration_uses_decoded_duration():
+    metrics = combine_audio_metrics(
+        {"sample_rate": 48000, "channels": 1, "codec": "opus", "container_duration_seconds": None},
+        {
+            "normalized_sample_rate": 16000,
+            "normalized_duration_seconds": 7.08,
+            "peak_amplitude": 0.33443,
+            "rms_amplitude": 0.03459,
+            "clipping_percentage": 0.0,
+            "speech_active_seconds": 6.2,
+        },
+        "audio/webm",
+    )
+    assert metrics["container_duration_seconds"] is None
+    assert metrics["input_duration_seconds"] == 7.08
+    assert metrics["input_duration_source"] == "decoded_fallback"
+
+
 def test_rejects_unknown_audio_format_and_model():
     with pytest.raises(SpeechError, match="Unsupported audio format"):
-        transcribe_bytes(b"x" * 2000, "audio/aac", "mlx-whisper", "mlx-community/whisper-base.en-mlx")
+        transcribe_bytes(b"x" * 2000, "audio/aac", "mlx-whisper", "mlx-community/whisper-medium.en-mlx")
     with pytest.raises(SpeechError, match="model selection"):
         transcribe_bytes(b"x" * 2000, "audio/wav", "mlx-whisper", "unapproved/model")
 

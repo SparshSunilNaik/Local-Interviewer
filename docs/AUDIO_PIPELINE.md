@@ -4,7 +4,7 @@
 
 The browser requests a selected microphone only after user action, enables echo cancellation/noise suppression, chooses a supported `MediaRecorder` MIME type, emits 250 ms chunks, and computes a local Web Audio amplitude meter. Stopping releases every device track. The bounded blob is uploaded with actual content type.
 
-FFmpeg decodes and normalizes to mono 16 kHz WAV. On Apple Silicon, `mlx-whisper` is preferred; `faster-whisper` is the portable fallback. Empty audio and missing engines are explicit errors. The candidate must review, edit, retry, or explicitly submit the transcript. Confidence is shown as unavailable when the backend cannot calculate it.
+FFmpeg decodes and normalizes to mono 16 kHz WAV. On Apple Silicon, the single supported model is `mlx-community/whisper-medium.en-mlx`; inference is serialized on one dedicated worker to avoid MLX stream corruption. Empty audio and missing engines are explicit errors. The candidate must review, edit, retry, or explicitly submit the transcript. The displayed recognition signal is a log-probability-derived heuristic, not a calibrated probability.
 
 ## Output
 

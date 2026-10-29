@@ -39,7 +39,7 @@ async def diagnostics():
 async def transcribe(
     file: Annotated[UploadFile, File()],
     backend: Annotated[str, Form()] = "mlx-whisper",
-    model: Annotated[str, Form()] = "mlx-community/whisper-base.en-mlx",
+    model: Annotated[str, Form()] = stt.MEDIUM_EN_MODEL,
     recording_id: Annotated[str | None, Form()] = None,
     reference_text: Annotated[str | None, Form()] = None,
 ):

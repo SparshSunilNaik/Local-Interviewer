@@ -14,10 +14,8 @@ import soundfile as sf
 
 logger = logging.getLogger("uvicorn.error")
 
-ALLOWED_MODELS = {
-    "mlx-community/whisper-base.en-mlx",
-    "mlx-community/whisper-small.en-mlx",
-}
+MEDIUM_EN_MODEL = "mlx-community/whisper-medium.en-mlx"
+ALLOWED_MODELS = {MEDIUM_EN_MODEL}
 DOMAIN_PROMPT = (
     "Domain vocabulary: Astra, Sparsh, Python, asyncio, FastAPI, Ollama, Qwen, "
     "RAG, LLM, API, machine learning."
@@ -54,7 +52,7 @@ def _probe(path: Path) -> dict:
             "-select_streams",
             "a:0",
             "-show_entries",
-            "stream=sample_rate,channels,duration,codec_name",
+            "stream=sample_rate,channels,duration,codec_name:format=duration",
             "-of",
             "json",
             str(path),
@@ -66,14 +64,22 @@ def _probe(path: Path) -> dict:
     )
     if process.returncode != 0:
         raise SpeechError("Audio could not be inspected. Record again using a supported format.")
-    streams = json.loads(process.stdout).get("streams", [])
+    probe = json.loads(process.stdout)
+    streams = probe.get("streams", [])
     if not streams:
         raise SpeechError("The recording contains no audio stream.")
     stream = streams[0]
+    duration_value = stream.get("duration") or probe.get("format", {}).get("duration")
+    try:
+        container_duration = float(duration_value) if duration_value not in {None, "N/A"} else None
+    except (TypeError, ValueError):
+        container_duration = None
+    if container_duration is not None and container_duration <= 0:
+        container_duration = None
     return {
         "sample_rate": int(stream.get("sample_rate") or 0),
         "channels": int(stream.get("channels") or 0),
-        "duration_seconds": round(float(stream.get("duration") or 0), 3),
+        "container_duration_seconds": round(container_duration, 3) if container_duration else None,
         "codec": stream.get("codec_name", "unknown"),
     }
 
@@ -136,6 +142,18 @@ def analyze_wav(path: Path) -> dict:
     }
 
 
+def combine_audio_metrics(input_info: dict, decoded_metrics: dict, mime: str) -> dict:
+    container_duration = input_info["container_duration_seconds"]
+    return {
+        **input_info,
+        **decoded_metrics,
+        "input_duration_seconds": container_duration
+        or decoded_metrics["normalized_duration_seconds"],
+        "input_duration_source": "container" if container_duration else "decoded_fallback",
+        "input_mime_type": mime,
+    }
+
+
 def _confidence(result: dict) -> float | None:
     log_probs = [segment.get("avg_logprob") for segment in result.get("segments", [])]
     values = [float(value) for value in log_probs if value is not None]
@@ -165,7 +183,8 @@ def transcribe_bytes(data: bytes, content_type: str, backend: str, model: str) -
         source.write_bytes(data)
         input_info = _probe(source)
         normalize_audio(source, normalized)
-        metrics = {**input_info, **analyze_wav(normalized), "input_mime_type": mime}
+        decoded_metrics = analyze_wav(normalized)
+        metrics = combine_audio_metrics(input_info, decoded_metrics, mime)
         if metrics["rms_amplitude"] < 0.0025 or metrics["speech_active_seconds"] < 0.12:
             raise SpeechError("No speech was detected. Check the microphone and try again.")
 
@@ -217,7 +236,7 @@ def transcribe_bytes(data: bytes, content_type: str, backend: str, model: str) -
         mime,
         metrics["sample_rate"],
         metrics["channels"],
-        metrics["duration_seconds"],
+        metrics["input_duration_seconds"],
         metrics["normalized_duration_seconds"],
         metrics["rms_amplitude"],
         metrics["peak_amplitude"],

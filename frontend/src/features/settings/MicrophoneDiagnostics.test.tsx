@@ -27,7 +27,7 @@ describe('MicrophoneDiagnostics', () => {
     expect(await screen.findByLabelText('Playback original recording')).toBeInTheDocument()
     expect(screen.getByText(/2.10 s · 9 chunks/)).toBeInTheDocument()
     fireEvent.change(screen.getByPlaceholderText(/Paste what you said/), {target:{value:'Hello 123 123 mic testing.'}})
-    fireEvent.click(screen.getByRole('button', {name:'Transcribe small.en'}))
+    fireEvent.click(screen.getByRole('button', {name:'Transcribe with medium.en'}))
     await waitFor(() => expect(screen.getByText('WER 0.0% · CER 0.0%')).toBeInTheDocument())
   })
 })
