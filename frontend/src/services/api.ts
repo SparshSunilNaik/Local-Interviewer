@@ -30,9 +30,11 @@ export const api = {
   evaluate: (id: string) => request(`/interviews/${id}/evaluation`, { method: 'POST' }),
   deleteInterview: (id: string) => request<void>(`/interviews/${id}`, { method: 'DELETE' }),
   deleteAllData: () => request<{deleted: boolean}>('/settings/data', { method: 'DELETE', body: JSON.stringify({confirmation:'DELETE ALL LOCAL DATA'}) }),
-  transcribe: async (blob: Blob) => {
-    const form = new FormData(); form.append('file', blob, `answer.${blob.type.includes('mp4') ? 'm4a' : 'webm'}`); form.append('backend', 'mlx-whisper'); form.append('model', 'mlx-community/whisper-base.en-mlx')
-    return request<{text: string; confidence: number|null; latency_ms: number}>('/stt/transcribe', { method: 'POST', body: form })
+  transcribe: async (blob: Blob, options?: {model?: string; recordingId?: string; referenceText?: string}) => {
+    const form = new FormData(); form.append('file', blob, `answer.${blob.type.includes('mp4') ? 'm4a' : blob.type.includes('wav') ? 'wav' : 'webm'}`); form.append('backend', 'mlx-whisper'); form.append('model', options?.model || 'mlx-community/whisper-small.en-mlx')
+    if(options?.recordingId) form.append('recording_id', options.recordingId)
+    if(options?.referenceText) form.append('reference_text', options.referenceText)
+    return request<{text: string; confidence: number|null; needs_review: boolean; latency_ms: number; audio_metrics: Record<string, string|number>; error_rates?: {wer:number;cer:number}}>('/stt/transcribe', { method: 'POST', body: form })
   },
   speak: async (text: string, voice = 'Samantha', speed = 1, signal?: AbortSignal) => {
     const response = await fetch(`${API_URL}/tts/synthesize`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ text, provider: 'auto', voice, speed }), signal })
