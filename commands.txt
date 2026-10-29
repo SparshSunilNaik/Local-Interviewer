@@ -1,0 +1,25 @@
+Local Interviewer commands
+==========================
+
+Open Terminal and go to the project:
+cd /Users/sparshsunilnaik/Documents/zara
+
+Start the frontend and backend:
+./start.sh
+
+Open the app:
+http://127.0.0.1:5173
+
+Stop the frontend and backend:
+./stop.sh
+
+Microphone:
+The app releases the microphone when recording stops or the app is closed.
+If the browser still shows the microphone indicator, close the Local Interviewer tab.
+
+View logs if startup fails:
+cat run/backend.log
+cat run/frontend.log
+
+Check whether the app is responding:
+curl http://127.0.0.1:8000/api/v1/health
