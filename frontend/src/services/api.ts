@@ -31,11 +31,11 @@ export const api = {
   deleteInterview: (id: string) => request<void>(`/interviews/${id}`, { method: 'DELETE' }),
   deleteAllData: () => request<{deleted: boolean}>('/settings/data', { method: 'DELETE', body: JSON.stringify({confirmation:'DELETE ALL LOCAL DATA'}) }),
   transcribe: async (blob: Blob) => {
-    const form = new FormData(); form.append('file', blob, `answer.${blob.type.includes('mp4') ? 'm4a' : 'webm'}`); form.append('backend', 'mlx-whisper'); form.append('model', 'mlx-community/whisper-small-mlx')
+    const form = new FormData(); form.append('file', blob, `answer.${blob.type.includes('mp4') ? 'm4a' : 'webm'}`); form.append('backend', 'mlx-whisper'); form.append('model', 'mlx-community/whisper-base.en-mlx')
     return request<{text: string; confidence: number|null; latency_ms: number}>('/stt/transcribe', { method: 'POST', body: form })
   },
-  speak: async (text: string, voice = 'Samantha', speed = 1) => {
-    const response = await fetch(`${API_URL}/tts/synthesize`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ text, provider: 'auto', voice, speed }) })
+  speak: async (text: string, voice = 'Samantha', speed = 1, signal?: AbortSignal) => {
+    const response = await fetch(`${API_URL}/tts/synthesize`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ text, provider: 'auto', voice, speed }), signal })
     if (!response.ok) throw new Error((await response.json()).detail || 'Speech synthesis failed')
     return response.blob()
   },

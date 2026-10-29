@@ -34,7 +34,7 @@ async def diagnostics():
 async def transcribe(
     file: Annotated[UploadFile, File()],
     backend: Annotated[str, Form()] = "mlx-whisper",
-    model: Annotated[str, Form()] = "mlx-community/whisper-small-mlx",
+    model: Annotated[str, Form()] = "mlx-community/whisper-base.en-mlx",
 ):
     data = await file.read(MAX_AUDIO_BYTES + 1)
     if len(data) > MAX_AUDIO_BYTES:
