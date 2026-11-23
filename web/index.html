@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Interviewer Guide</title>
+  <meta name="description" content="Local Interviewer runs private, adaptive practice interviews with an interviewer called Astra, using models on your own machine. Try it in your browser, then see how Astra picks questions and how answers are scored.">
+  <link rel="icon" href="app/favicon.svg">
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("li-site-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#top" aria-label="Local Interviewer, back to top">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="8" fill="var(--accent)"/><ellipse cx="16" cy="16" rx="8.5" ry="5.5" fill="none" stroke="var(--surface)" stroke-width="2"/><circle cx="16" cy="16" r="2.6" fill="var(--surface)"/></svg>
+        <span>Local Interviewer</span>
+      </a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#try">Try it</a>
+        <a href="#astra">How Astra decides</a>
+        <a href="#scoring">Scoring</a>
+        <a href="#voice">Voice and privacy</a>
+        <a href="#setup">Setup</a>
+        <a href="#notes">Notes</a>
+      </nav>
+      <button class="icon-btn theme-btn" id="theme-btn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a9 9 0 1 0 11 11Z"/></svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/SparshSunilNaik/Local-Interviewer" aria-label="Source on GitHub" title="Source on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="wrap">
+      <section class="hero">
+        <div>
+          <h1>Rehearse the interview <em>with no one listening.</em></h1>
+          <p>Local Interviewer runs adaptive practice interviews with an interviewer called Astra. The model, the speech recognition and the voice all run on your own machine, and every transcript stays in a local database.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#try">Try it in your browser</a>
+            <a class="btn" href="#setup">Install it</a>
+          </div>
+          <div class="facts"><span class="chip acc">15 interview types</span><span class="chip">Ollama, Qwen3 8B</span><span class="chip">Whisper medium.en</span><span class="chip">FastAPI + React</span><span class="chip">macOS and Windows</span></div>
+        </div>
+        <div class="orb" aria-hidden="true">
+          <svg viewBox="0 0 400 400">
+            <defs>
+              <radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#9fb2ff"/><stop offset=".7" stop-color="#6a4cf0"/><stop offset="1" stop-color="#6a4cf0" stop-opacity="0"/></radialGradient>
+            </defs>
+            <circle class="core" cx="200" cy="200" r="150" fill="url(#g)" opacity=".9"/>
+            <g class="ring"><ellipse cx="200" cy="200" rx="150" ry="62" fill="none" stroke="var(--accent)" stroke-width="1.6" opacity=".7"/></g>
+            <g class="ring r2"><ellipse cx="200" cy="200" rx="58" ry="150" fill="none" stroke="var(--cyan)" stroke-width="1.4" opacity=".6"/></g>
+          </svg>
+          <span class="orb-caption">Astra, listening</span>
+        </div>
+      </section>
+
+      <section class="block" id="try">
+        <div class="sec-head">
+          <span class="num">01 / Try it</span>
+          <h2>The real app, in offline mode</h2>
+          <p>This is the project's own React app. A JavaScript port of the back end's offline path answers it in your browser: the question bank, the follow-up rules and the fallback scoring. I checked the port against the real FastAPI back end over 120 interviews and 1,824 comparisons, with no differences. Answers are typed here; Ollama, Whisper and voice need the local install.</p>
+        </div>
+        <div class="live">
+          <div class="card frame">
+            <div class="frame-bar"><i></i><i></i><i></i><span>Local Interviewer, browser demo</span><a href="app/" target="_blank" rel="noopener">Open full screen</a></div>
+            <div class="screen" id="screen">
+              <div class="cover" id="cover"><div><b>Meet Astra</b><p>Your answers are stored in this browser only.</p><button class="btn primary" id="boot" type="button">Start the app</button></div></div>
+            </div>
+          </div>
+          <div class="card tour">
+            <h3>Try this</h3>
+            <p class="note">Tick them off as you go.</p>
+            <a class="btn primary mobile-only" href="app/">Open the app</a>
+            <p class="note mobile-only">The app opens on its own page on phones.</p>
+            <ol id="tour">
+              <li><label><input type="checkbox"><span><b>Start a quick practice</b>Pick Quick practice, add a role, keep Text only and the offline question bank.</span></label></li>
+              <li><label><input type="checkbox"><span><b>Give a short first answer</b>Under 18 words earns "walk me through a concrete example".</span></label></li>
+              <li><label><input type="checkbox"><span><b>Say "mic test"</b>Astra notices it is not an answer and offers to repeat the question.</span></label></li>
+              <li><label><input type="checkbox"><span><b>Claim the GIL makes threads run in parallel</b>Astra asks you to test the claim instead of correcting you.</span></label></li>
+              <li><label><input type="checkbox"><span><b>End and generate the report</b>Then download it as Markdown or JSON.</span></label></li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="astra">
+        <div class="sec-head">
+          <span class="num">02 / How Astra decides</span>
+          <h2>One question per turn, chosen by rules first</h2>
+          <p>Before any model sees an answer, three checks run in code. Without a model, a fixed question bank and a follow-up counter decide the next question. Type an answer to see which rule fires; this uses the same port as the app above.</p>
+        </div>
+        <div class="decide">
+          <div class="card">
+            <h3>Your answer</h3>
+            <textarea class="ans" id="ans" aria-label="Candidate answer">I'm not sure.</textarea>
+            <div class="row" style="margin-top:10px">
+              <button class="btn small" type="button" data-a="mic test, can you hear me">Mic test</button>
+              <button class="btn small" type="button" data-a="I'm not sure how database indexing works">Unsure about indexes</button>
+              <button class="btn small" type="button" data-a="The GIL makes all threads run in parallel.">GIL claim</button>
+              <button class="btn small" type="button" data-a="I built an API.">Short answer</button>
+              <button class="btn small" type="button" data-a="I owned a payment reconciliation service, added idempotency keys in Postgres, and cut duplicate charges from forty a week to zero while keeping p99 latency flat.">Detailed answer</button>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <span class="lbl" style="margin:0">Interview</span>
+              <select class="sel" id="cat" aria-label="Interview type"></select>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <span class="lbl" style="margin:0">Follow-ups already used</span>
+              <div class="seg" role="group" aria-label="Follow-ups already used" id="fu"><button type="button" data-v="0">0</button><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>What Astra does</h3>
+            <ol class="rules" id="rules"></ol>
+            <div class="reply"><span class="who" id="reply-who">ASTRA</span><p id="reply"></p></div>
+            <div class="meta" id="meta"></div>
+          </div>
+        </div>
+        <div class="card states">
+          <h3>The interview state machine</h3>
+          <p class="note">Fifteen states. The transition table allows only the violet moves; the dashed ones are what the API actually does. Pick a state.</p>
+          <div id="states"></div>
+          <p class="st-info" id="st-info" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="block" id="scoring">
+        <div class="sec-head">
+          <span class="num">03 / Scoring</span>
+          <h2>Evidence or it does not count</h2>
+          <p>With a model, a separate evaluator returns weighted dimensions with quoted evidence. The back end recomputes the overall score itself, removes any quote that is not word for word from your answers, and lowers confidence where evidence is missing. Without a model, a limited fallback score is used.</p>
+        </div>
+        <div class="score">
+          <div class="card">
+            <h3>The evidence check</h3>
+            <span class="lbl">Candidate answer</span>
+            <textarea class="ans" id="ev-answer" aria-label="Candidate answer for the evidence check">I added idempotency keys to the payments API and measured duplicate charges falling to zero within a week.</textarea>
+            <span class="lbl" style="margin-top:12px">Quotes the evaluator returned</span>
+            <ul class="quotes" id="quotes"></ul>
+            <p class="note" style="margin-top:10px">Spacing and capital letters are ignored. Anything else must match exactly.</p>
+          </div>
+          <div class="card curve">
+            <h3>The fallback score</h3>
+            <p class="note" style="margin-bottom:8px">Used when no model is connected. It looks only at how many words your answers average.</p>
+            <div id="fallback"></div>
+            <div class="range-row" style="margin-top:8px"><input type="range" id="avg" min="1" max="100" value="24" aria-label="Average words per answer"><output id="avg-out"></output></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="voice">
+        <div class="sec-head">
+          <span class="num">04 / Voice and privacy</span>
+          <h2>Speech that never leaves the machine</h2>
+          <p>The browser's built-in speech features are not used, because some send audio to the cloud. Recording and playback take turns, and you always review a transcript before it is sent.</p>
+        </div>
+        <div class="card pipe" id="pipe"></div>
+        <div class="privacy" id="privacy"></div>
+      </section>
+
+      <section class="block" id="setup">
+        <div class="sec-head">
+          <span class="num">05 / Setup</span>
+          <h2>Install it for the full experience</h2>
+          <p>Needs Git, Node.js 22, <code>uv</code> and FFmpeg. Python 3.12 is fetched by <code>uv</code>. Nothing large is downloaded until you ask.</p>
+        </div>
+        <div class="setup">
+          <div class="card">
+            <h3>macOS (Apple silicon)</h3>
+            <div class="cmd"><pre>git clone https://github.com/SparshSunilNaik/Local-Interviewer.git
+cd Local-Interviewer
+./setup.sh
+./start.sh</pre><button class="copy" type="button">Copy</button></div>
+            <p>Then add the model and on-device speech recognition:</p>
+            <div class="cmd"><pre>ollama pull qwen3:8b
+cd backend
+uv sync --group stt-apple</pre><button class="copy" type="button">Copy</button></div>
+            <p class="note">Open <code>http://127.0.0.1:5173</code>. Whisper medium.en (about 1.5 GB) downloads on the first transcription. <code>./stop.sh</code> stops only the app's own processes.</p>
+          </div>
+          <div class="card">
+            <h3>Windows (PowerShell)</h3>
+            <div class="cmd"><pre>git clone https://github.com/SparshSunilNaik/Local-Interviewer.git
+cd Local-Interviewer
+.\scripts\setup-windows.ps1
+.\scripts\start-windows.ps1</pre><button class="copy" type="button">Copy</button></div>
+            <p>Portable speech recognition with faster-whisper:</p>
+            <div class="cmd"><pre>cd backend
+uv sync --group stt-portable</pre><button class="copy" type="button">Copy</button></div>
+            <p class="note">The macOS voice is not available on Windows, so use text mode until a local Kokoro voice is set up. Close the app's terminals to stop it.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="notes">
+        <div class="sec-head">
+          <span class="num">06 / Notes</span>
+          <h2>Found while porting the engine</h2>
+          <p>All of these happen in the live app above too, because the port follows the back end exactly.</p>
+        </div>
+        <div class="notes" id="notes-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span><a href="https://github.com/SparshSunilNaik/Local-Interviewer">Local Interviewer</a> by Sparsh Sunil Naik. Scores are AI-generated practice feedback, not hiring decisions. The repository has no license yet.</span>
+      <span>FastAPI, React, Ollama, Whisper</span>
+    </div>
+  </footer>
+
+  <script src="js/theme.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/site.js"></script>
+</body>
+</html>
